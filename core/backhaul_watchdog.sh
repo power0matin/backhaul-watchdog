@@ -149,7 +149,7 @@ while true; do
 │ Remove service and config file                            [5] │
 │ Help (Full usage guide)                                   [6] │
 │ Exit menu                                                 [0] │
-
+ 
 ╚════════════════════════════════════════════════════════════════════════╝
 EOF
   read -p "👉 Select an option by number: " choice
