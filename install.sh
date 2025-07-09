@@ -6,7 +6,7 @@ BIN_PATH="/usr/local/bin/backhaul-watchdog"
 CLI_ALIAS="/usr/local/bin/watchdog"
 SERVICE_PATH="/etc/systemd/system/backhaul_watchdog.service"
 CONFIG_PATH="/root/backhaul_watchdog.conf"
-REPO_URL="https://raw.githubusercontent.com/powermatin/backhaul-watchdog/master"
+REPO_URL="https://raw.githubusercontent.com/power0matin/backhaul-watchdog/master"
 
 echo "🚀 Installing Backhaul Watchdog..."
 

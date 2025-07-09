@@ -72,7 +72,7 @@ WantedBy=multi-user.target
 
 ## 👨‍💻 Developer
 
-Developed with care by **[@powermatin](https://github.com/powermatin)**
+Developed with care by **[@powermatin](https://github.com/power0matin)**
 Feel free to open issues or contribute.
 If you like it, give the repo a ⭐️ star!
 
