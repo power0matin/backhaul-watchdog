@@ -1,4 +1,3 @@
-````markdown
 # 🔒 Backhaul Watchdog
 
 A minimal, production-ready watchdog script to monitor IP:PORT endpoints and auto-restart your `backhaul` service on failures.  
@@ -19,7 +18,6 @@ Built for system administrators who demand simple, reliable uptime automation.
    git clone https://github.com/powermatin/backhaul-watchdog
    cd backhaul-watchdog
    ```
-````
 
 2. Run the setup menu:
 
