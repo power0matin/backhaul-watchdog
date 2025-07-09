@@ -56,3 +56,4 @@ fi
 
 echo -e "${GREEN}✅ Installed successfully!${NC}"
 echo -e "👉 You can now run it using: ${YELLOW}watchdog${NC}"
+

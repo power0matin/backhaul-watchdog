@@ -148,7 +148,7 @@ while true; do
 │ Update watchdog script and service                        [4] │
 │ Remove service and config file                            [5] │
 │ Help (Full usage guide)                                   [6] │
-│ Exit menu                                                [0] │
+│ Exit menu                                                 [0] │
 
 ╚════════════════════════════════════════════════════════════════════════╝
 EOF
