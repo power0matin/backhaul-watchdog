@@ -11,32 +11,36 @@ Built for system administrators who demand simple, reliable uptime automation.
 - Interactive control panel for configuration and management.
 - Lightweight and dependency-friendly (just bash, curl, nc, ping, openssl).
 
-## ⚙️ Setup
+## 🚀 Quick Install
 
-1. Clone this repo:
+Install with a single command:
 
-   ```bash
-   git clone https://github.com/powermatin/backhaul-watchdog
-   cd backhaul-watchdog
-   ```
+```bash
+bash <(curl -Ls https://raw.githubusercontent.com/power0matin/backhaul-watchdog/main/install.sh)
+```
 
-2. Run the setup menu:
+Then run:
 
-   ```bash
-   sudo bash backhaul_watchdog.sh
-   ```
+```bash
+backhaul
+```
 
-3. Choose option `[1]` to add endpoints and install the systemd service.
+And use the menu!
+
+```
 
 ## 🛠 Configuration
 
 Edit `backhaul_watchdog.conf`:
 
 ```
+
 # Format: IP:PORT
+
 192.168.1.1:443
 8.8.8.8:53
-```
+
+````
 
 ## 🔁 Systemd Integration
 
@@ -54,7 +58,7 @@ RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
-```
+````
 
 ## 📂 Files
 
@@ -71,8 +75,6 @@ WantedBy=multi-user.target
 Developed with care by **[@powermatin](https://github.com/powermatin)**
 Feel free to open issues or contribute.
 If you like it, give the repo a ⭐️ star!
-
-
 
 ## 📜 License
 
