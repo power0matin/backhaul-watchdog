@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $EUID -ne 0 ]]; then
-  echo "🚨 لطفاً اسکریپت را با دسترسی root اجرا کنید."
+  echo "🚨 Please run this script as root."
   exit 1
 fi
 
@@ -14,11 +14,9 @@ BOLD='\e[1m'; NC='\e[0m'
 RED='\e[91m'; GREEN='\e[92m'; YELLOW='\e[93m'
 BLUE='\e[94m'; MAGENTA='\e[95m'; CYAN='\e[96m'; GRAY='\e[90m'
 
-# تابع اعتبارسنجی فرمت IP:PORT
 validate_endpoint() {
   local ep=$1
   if [[ "$ep" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]{1,5}$ ]]; then
-    # چک کردن هر بخش IP که <= 255 باشد
     IFS=':' read -r ip port <<< "$ep"
     IFS='.' read -r -a octets <<< "$ip"
     for octet in "${octets[@]}"; do
@@ -26,7 +24,6 @@ validate_endpoint() {
         return 1
       fi
     done
-    # چک کردن محدوده پورت
     if ((port > 0 && port <= 65535)); then
       return 0
     fi
@@ -36,32 +33,32 @@ validate_endpoint() {
 
 print_help() {
   clear
-  echo -e "${CYAN}${BOLD}راهنمای کامل استفاده از Backhaul Watchdog${NC}"
+  echo -e "${CYAN}${BOLD}Backhaul Watchdog Full Usage Guide${NC}"
   echo
-  echo "این پروژه برای مانیتورینگ و نگهداری اتصال تانل‌های سرور ایران به خارج طراحی شده است."
-  echo "اگر پینگ یا اتصال به هر یک از سرورهای تعیین شده بالا رفت یا قطع شد، سرویس به صورت خودکار تانل را ریستارت می‌کند."
+  echo "This project monitors and maintains your server's tunnel connections."
+  echo "If ping or connection to any specified server goes high or fails,"
+  echo "the service will automatically restart the tunnel."
   echo
-  echo "گزینه‌ها در منوی اصلی:"
-  echo " 1. Initial setup (add endpoints): در این قسمت باید IP و پورت سرورهای خود را به فرمت IP:PORT وارد کنید."
-  echo "    مثال: 192.168.1.1:443"
-  echo "    توجه داشته باشید که اگر فرمت اشتباه باشد، دوباره از شما درخواست می‌شود تا ورودی صحیح وارد کنید."
+  echo "Main menu options:"
+  echo " 1. Initial setup (add endpoints): Enter your server IP:PORT addresses here."
+  echo "    Example: 192.168.1.1:443"
+  echo "    If the format is wrong, you will be asked to enter again."
   echo
-  echo " 2. Edit configuration file: اگر می‌خواهید لیست سرورها را به صورت دستی ویرایش کنید، این گزینه را انتخاب کنید."
+  echo " 2. Edit configuration file: Edit your server list manually."
   echo
-  echo " 3. Restart watchdog service: این گزینه باعث می‌شود سرویس مانیتورینگ مجدداً راه‌اندازی شود."
+  echo " 3. Restart watchdog service: Restart the monitoring service manually."
   echo
-  echo " 4. Remove service and config file: برای حذف کامل سرویس و فایل‌های تنظیمات استفاده می‌شود."
+  echo " 4. Remove service and config file: Completely remove service and configs."
   echo
-  echo " 0. Exit menu: خروج از منوی کنترل."
+  echo " 0. Exit menu: Exit the control panel."
   echo
-  echo "برای اجرای مانیتورینگ اصلی اسکریپت، کافی است سرویس systemd به صورت خودکار اجرا شود."
+  echo "The watchdog runs automatically as a systemd service."
   echo
-  echo "هر گونه سوال یا مشکل داشتید، با توسعه‌دهنده @powermatin تماس بگیرید."
+  echo "For questions or issues, contact the developer @powermatin."
   echo
-  read -p "برای بازگشت به منو کلید Enter را بزنید..."
+  read -p "Press Enter to return to menu..."
 }
 
-# ======================== Menu ========================
 if [ "$MODE" != "run" ]; then
   while true; do
     clear
@@ -73,7 +70,7 @@ if [ "$MODE" != "run" ]; then
     printf "│ ${CYAN}%-54s${NC} ${YELLOW}${BOLD}%6s${NC} │\n" "Edit configuration file" "[2]"
     printf "│ ${BLUE}%-54s${NC} ${YELLOW}${BOLD}%6s${NC} │\n" "Restart watchdog service" "[3]"
     printf "│ ${RED}%-54s${NC} ${YELLOW}${BOLD}%6s${NC} │\n" "Remove service and config file" "[4]"
-    printf "│ ${GRAY}%-54s${NC} ${YELLOW}${BOLD}%6s${NC} │\n" "Help (راهنما)" "[5]"
+    printf "│ ${GRAY}%-54s${NC} ${YELLOW}${BOLD}%6s${NC} │\n" "Help" "[5]"
     printf "│ ${GRAY}%-54s${NC} ${YELLOW}${BOLD}%6s${NC} │\n" "Exit menu" "[0]"
     echo -e "${NC}"
     read -p "$(echo -e ${MAGENTA}${BOLD}👉 Select an option by number: ${NC})" choice
@@ -81,27 +78,27 @@ if [ "$MODE" != "run" ]; then
     case "$choice" in
       1)
         echo "# Backhaul endpoints config file" > "$CONFIG_FILE"
-        echo "💡 چند سرور می‌خواهید اضافه کنید؟"
+        echo "💡 How many servers do you want to add?"
         read -r COUNT
         if ! [[ "$COUNT" =~ ^[0-9]+$ ]] || (( COUNT <= 0 )); then
-          echo -e "${RED}❌ تعداد معتبر نیست. به منو باز می‌گردیم.${NC}"
+          echo -e "${RED}❌ Invalid number. Returning to menu.${NC}"
           sleep 2
           continue
         fi
 
         for ((i=1; i<=COUNT; i++)); do
           while true; do
-            read -p "🔹 وارد کردن endpoint شماره $i (فرمت IP:PORT): " line
+            read -p "🔹 Enter endpoint #$i (format IP:PORT): " line
             if validate_endpoint "$line"; then
               echo "$line" >> "$CONFIG_FILE"
               break
             else
-              echo -e "${RED}⚠️ فرمت اشتباه است. لطفاً دوباره وارد کنید.${NC}"
+              echo -e "${RED}⚠️ Invalid format. Please try again.${NC}"
             fi
           done
         done
 
-        echo -e "${BLUE}🛠 ایجاد سرویس systemd...${NC}"
+        echo -e "${BLUE}🛠 Creating systemd service...${NC}"
         cat <<EOF | tee "$SERVICE_FILE" > /dev/null
 [Unit]
 Description=Backhaul Watchdog Service
@@ -119,44 +116,44 @@ EOF
         systemctl daemon-reload
         systemctl enable backhaul_watchdog.service
         systemctl start backhaul_watchdog.service
-        echo -e "${GREEN}✅ سرویس با موفقیت راه‌اندازی شد.${NC}"
-        echo "💡 برای اعمال تغییرات بهتر است سیستم خود را ریستارت کنید."
-        read -p "برای بازگشت به منو کلید Enter را بزنید..."
+        echo -e "${GREEN}✅ Service started successfully.${NC}"
+        echo "💡 It's recommended to reboot your system to apply changes."
+        read -p "Press Enter to return to menu..."
         ;;
       2)
         if [ ! -f "$CONFIG_FILE" ]; then
-          echo -e "${RED}⚠️ فایل تنظیمات وجود ندارد. ابتدا گزینه 1 را اجرا کنید.${NC}"
+          echo -e "${RED}⚠️ Config file not found. Please run option 1 first.${NC}"
           sleep 2
           continue
         fi
         nano "$CONFIG_FILE"
-        echo "💡 برای اعمال تغییرات بهتر است سیستم خود را ریستارت کنید."
-        read -p "برای بازگشت به منو کلید Enter را بزنید..."
+        echo "💡 It's recommended to reboot your system to apply changes."
+        read -p "Press Enter to return to menu..."
         ;;
       3)
         systemctl restart backhaul_watchdog.service
-        echo "$(date '+%Y-%m-%d %H:%M:%S') سرویس Watchdog به صورت دستی ریستارت شد." >> "$LOG_FILE"
-        echo -e "${GREEN}✅ سرویس Watchdog ریستارت شد.${NC}"
-        read -p "برای بازگشت به منو کلید Enter را بزنید..."
+        echo "$(date '+%Y-%m-%d %H:%M:%S') Watchdog service restarted manually." >> "$LOG_FILE"
+        echo -e "${GREEN}✅ Watchdog service restarted.${NC}"
+        read -p "Press Enter to return to menu..."
         ;;
       4)
         systemctl stop backhaul_watchdog.service
         systemctl disable backhaul_watchdog.service
         rm -f "$SERVICE_FILE" "$CONFIG_FILE"
         systemctl daemon-reload
-        echo "$(date '+%Y-%m-%d %H:%M:%S') سرویس Watchdog و فایل‌های تنظیمات حذف شدند." >> "$LOG_FILE"
-        echo -e "${RED}🗑️ سرویس و فایل‌های تنظیمات حذف شدند.${NC}"
-        read -p "برای بازگشت به منو کلید Enter را بزنید..."
+        echo "$(date '+%Y-%m-%d %H:%M:%S') Watchdog service and config files removed." >> "$LOG_FILE"
+        echo -e "${RED}🗑️ Service and config files removed.${NC}"
+        read -p "Press Enter to return to menu..."
         ;;
       5)
         print_help
         ;;
       0)
-        echo "👋 خداحافظ!"
+        echo "👋 Goodbye!"
         exit 0
         ;;
       *)
-        echo -e "${RED}❌ گزینه نامعتبر است.${NC}"
+        echo -e "${RED}❌ Invalid option.${NC}"
         sleep 1.5
         ;;
     esac
@@ -164,9 +161,7 @@ EOF
   exit 0
 fi
 
-# ======================== Monitoring Mode ========================
-
-RESTART_COOLDOWN=300  # ثانیه‌ها بین ریستارت‌های متوالی
+RESTART_COOLDOWN=300
 LAST_RESTART=0
 
 log() {
@@ -192,15 +187,14 @@ check_curl() {
   curl -s --connect-timeout 3 "$PROTO://$1:$2" >/dev/null
 }
 
-# چک می‌کنیم فایل کانفیگ وجود داشته باشه و حداقل یک endpoint داشته باشه
 if [ ! -f "$CONFIG_FILE" ]; then
-  echo -e "${RED}❌ فایل تنظیمات یافت نشد. لطفاً ابتدا از منو endpoints اضافه کنید.${NC}"
+  echo -e "${RED}❌ Config file not found. Please add endpoints first.${NC}"
   exit 1
 fi
 
 ENDPOINTS_COUNT=$(grep -v '^#' "$CONFIG_FILE" | grep -c '.')
 if (( ENDPOINTS_COUNT == 0 )); then
-  echo -e "${RED}❌ هیچ endpoint ای برای مانیتورینگ وجود ندارد. لطفاً ابتدا از منو endpoints اضافه کنید.${NC}"
+  echo -e "${RED}❌ No endpoints found. Please add endpoints first.${NC}"
   exit 1
 fi
 
@@ -209,7 +203,7 @@ while true; do
     [[ "$line" =~ ^#.*$ ]] && continue
     [[ -z "$line" ]] && continue
     if ! [[ "$line" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+$ ]]; then
-      log "⚠️ خط نامعتبر در فایل تنظیمات رد شد: $line"
+      log "⚠️ Invalid line skipped in config: $line"
       continue
     fi
 
@@ -227,20 +221,15 @@ while true; do
       CURRENT_TIME=$(date +%s)
       if (( CURRENT_TIME - LAST_RESTART >= RESTART_COOLDOWN )); then
         if systemctl is-active --quiet backhaul.service; then
-          log "🔁 در حال ریستارت backhaul از طریق systemctl"
+          log "🔁 Restarting backhaul via systemctl"
           systemctl restart backhaul.service
-          log "✔️ backhaul با موفقیت ریستارت شد"
+          log "✔️ backhaul restarted successfully"
         else
-          log "⚠️ سرویس backhaul فعال نیست، امکان ریستارت نیست"
+          log "⚠️ backhaul service not active, skipping restart"
         fi
         LAST_RESTART=$CURRENT_TIME
-      else
-        log "⏳ زمان بین ریستارت‌ها کافی نیست، ریستارت رد شد"
       fi
-    else
-      log "✅ اتصال سالم برای $IP:$PORT"
     fi
-  done < "$CONFIG_FILE"
-
-  sleep 90
+  done < <(grep -v '^#' "$CONFIG_FILE")
+  sleep 20
 done
