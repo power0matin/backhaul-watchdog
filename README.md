@@ -70,11 +70,16 @@ WantedBy=multi-user.target
 | `README.md`               | You're reading it     |
 | `LICENSE`                 | MIT License           |
 
-## 👨‍💻 Developer
+## 👨‍💻 Developer & Maintainer
 
-Developed with care by **[@powermatin](https://github.com/power0matin)**
+This project was originally created by [MH-Zia](https://github.com/MH-Zia).
+
+It has been actively maintained and enhanced by **[@powermatin](https://github.com/power0matin)**.
+
 Feel free to open issues or contribute.
-If you like it, give the repo a ⭐️ star!
+
+If you find this project helpful, please give it a ⭐️ star!
+
 
 ## 📜 License
 
