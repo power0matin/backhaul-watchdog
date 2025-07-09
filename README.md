@@ -14,6 +14,7 @@ Built for system administrators who demand simple, reliable uptime automation.
 ## ⚙️ Setup
 
 1. Clone this repo:
+
    ```bash
    git clone https://github.com/powermatin/backhaul-watchdog
    cd backhaul-watchdog
@@ -69,49 +70,10 @@ WantedBy=multi-user.target
 
 Developed with care by **[@powermatin](https://github.com/powermatin)**
 Feel free to open issues or contribute.
+If you like it, give the repo a ⭐️ star!
+
+
 
 ## 📜 License
 
 MIT — Use it freely, even commercially. Just give credit!
-
-````
-
-
-## 📝 2. `LICENSE` (MIT Recommended)
-
-```text
-MIT License
-
-Copyright (c) 2025 powermatin
-
-Permission is hereby granted, free of charge, to any person obtaining a copy...
-````
-
-➡️ I’ll generate this full file for you if you want.
-
-## 🧾 3. `config_example.conf`
-
-```text
-# Example: config_example.conf
-# Format: IP:PORT
-
-1.1.1.1:443
-8.8.8.8:53
-```
-
-## 🔌 4. `systemd_example.service`
-
-```ini
-[Unit]
-Description=Backhaul Watchdog Service
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=/bin/bash /root/backhaul_watchdog.sh run
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
