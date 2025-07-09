@@ -1,0 +1,12 @@
+[Unit]
+Description=Backhaul Watchdog Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /root/backhaul_watchdog.sh run
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
