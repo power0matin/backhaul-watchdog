@@ -114,16 +114,7 @@ You can freely use, modify, and distribute it for personal or commercial purpose
 To **completely remove** Backhaul Watchdog from your system:
 
 ```bash
-# Stop and disable the systemd service
-sudo systemctl stop backhaul
-sudo systemctl disable backhaul
-
-# Remove the service file
-sudo rm -f /etc/systemd/system/backhaul.service
-sudo systemctl daemon-reload
-
 # Remove the script and configuration files
-sudo rm -f /usr/bin/backhaul
 sudo rm -rf /root/backhaul_watchdog.sh
 sudo rm -rf /root/backhaul_watchdog.conf
 
