@@ -1,59 +1,53 @@
 #!/bin/bash
-
 set -euo pipefail
 
-BIN_PATH="/usr/local/bin/backhaul-watchdog"
-CLI_ALIAS="/usr/local/bin/watchdog"
-SERVICE_PATH="/etc/systemd/system/backhaul_watchdog.service"
-CONFIG_PATH="/root/backhaul_watchdog.conf"
-REPO_URL="https://raw.githubusercontent.com/power0matin/backhaul-watchdog/main/core"
+# Color codes
+GREEN='\033[0;32m'
+CYAN='\033[1;36m'
+RED='\033[0;31m'
+NC='\033[0m'
 
-# رنگ‌ها برای نمایش پیام‌ها
-YELLOW="\033[1;33m"
-GREEN="\033[1;32m"
-NC="\033[0m"
-
-# چک کردن دسترسی sudo
-if [ "$EUID" -ne 0 ]; then
-  echo -e "${YELLOW}Please run as root or use sudo.${NC}"
-  exit 1
-fi
-
-echo -e "${GREEN}🚀 Installing Backhaul Watchdog...${NC}"
-
-# دانلود اسکریپت اصلی
-if curl -fsSL "$REPO_URL/backhaul_watchdog.sh" -o "$BIN_PATH"; then
-  chmod +x "$BIN_PATH"
-else
-  echo -e "${YELLOW}Failed to download backhaul_watchdog.sh${NC}"
-  exit 1
-fi
-
-# ساخت شورتکات CLI
-cat > "$CLI_ALIAS" <<EOF
-#!/bin/bash
-bash $BIN_PATH "\$@"
-EOF
-chmod +x "$CLI_ALIAS"
-
-# دانلود کانفیگ نمونه اگر وجود نداشت
-if [ ! -f "$CONFIG_PATH" ]; then
-  if ! curl -fsSL "$REPO_URL/config_example.conf" -o "$CONFIG_PATH"; then
-    echo -e "${YELLOW}Failed to download default config file${NC}"
+# Check root privileges
+if [[ $EUID -ne 0 ]]; then
+    echo -e "${RED}❌ This script must be run as root${NC}"
     exit 1
-  fi
 fi
 
-# دانلود فایل سرویس systemd
-if curl -fsSL "$REPO_URL/systemd_example.service" -o "$SERVICE_PATH"; then
-  systemctl daemon-reload
-  systemctl enable backhaul_watchdog
-  systemctl restart backhaul_watchdog
-else
-  echo -e "${YELLOW}Failed to download or enable systemd service${NC}"
-  exit 1
-fi
+echo -e "${CYAN}🔧 Backhaul Watchdog Installation${NC}"
 
-echo -e "${GREEN}✅ Installed successfully!${NC}"
-echo -e "👉 You can now run it using: ${YELLOW}watchdog${NC}"
+# Paths
+SCRIPT_DIR="/usr/local/bin/backhaul_watchdog"
+CONFIG_DIR="/etc/backhaul_watchdog"
+SYSTEMD_DIR="/etc/systemd/system"
 
+# Create directories
+mkdir -p "$SCRIPT_DIR" "$CONFIG_DIR" "$SYSTEMD_DIR"
+
+# Copy files
+echo -e "${GREEN}📝 Copying files...${NC}"
+cp core/*.sh "$SCRIPT_DIR/"
+cp config/config_example.conf "$CONFIG_DIR/"
+cp config/setup_endpoints.sh "$SCRIPT_DIR/"
+cp systemd/backhaul_watchdog.service "$SYSTEMD_DIR/"
+cp systemd/backhaul_watchdog.timer "$SYSTEMD_DIR/"
+cp install.sh /usr/local/bin/
+
+# Set permissions
+chmod +x "$SCRIPT_DIR/"*.sh /usr/local/bin/install.sh
+chmod 600 "$CONFIG_DIR/config_example.conf"
+
+# Create alias
+echo -e "${GREEN}🔗 Creating CLI alias 'watchdog'...${NC}"
+echo "alias watchdog='bash $SCRIPT_DIR/backhaul_watchdog.sh'" >> /root/.bashrc
+
+# Run initial setup
+echo -e "${GREEN}🔧 Running initial setup...${NC}"
+bash "$SCRIPT_DIR/setup_endpoints.sh"
+
+# Reload and start systemd
+echo -e "${GREEN}🔄 Reloading systemd...${NC}"
+systemctl daemon-reexec
+systemctl daemon-reload
+systemctl enable --now backhaul-watchdog.timer
+
+echo -e "${GREEN}✅ Installation complete! Run 'watchdog' to manage the service.${NC}"

@@ -1,167 +1,163 @@
 #!/bin/bash
+set -euo pipefail
 
-SERVICE_NAME="backhaul_watchdog.service"
-SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME"
-CONFIG_FILE="/root/backhaul_watchdog.conf"
-WATCHDOG_SCRIPT="/root/backhaul_watchdog.sh"
-GITHUB_REPO="https://raw.githubusercontent.com/power0matin/backhaul-watchdog/main"
+# Color codes
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+CYAN='\033[1;36m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
 
-print_help() {
-  clear
-  cat <<EOF
-Backhaul Watchdog Full Usage Guide
+# Paths
+CONFIG_DIR="/etc/backhaul_watchdog"
+CONFIG_FILE="$CONFIG_DIR/backhaul_watchdog.conf"
+STATE_DIR="/var/lib/backhaul_watchdog"
+STATE_FILE="$STATE_DIR/last_action"
+SCRIPT_DIR="/usr/local/bin/backhaul_watchdog"
 
-1. Initial setup (add endpoints):
-   Enter your servers in IP:PORT format, e.g., 192.168.1.1:443.
-   Invalid inputs won't be saved and you'll be asked to re-enter.
+# Load helpers
+source "$SCRIPT_DIR/helpers.sh"
 
-2. Edit configuration file:
-   Opens the config file for manual editing.
+# Check root privileges
+check_root
 
-3. Restart watchdog service:
-   Restarts the monitoring systemd service.
+# Load config
+load_config "$CONFIG_FILE"
 
-4. Update:
-   Downloads the latest watchdog script and service file from GitHub,
-   replaces old files, and restarts the service.
-
-5. Remove:
-   Stops and disables the service,
-   deletes config and service files completely.
-
-6. Help:
-   Show this help message.
-
-0. Exit:
-   Exit the control panel.
-
-EOF
-  read -p "Press Enter to return to menu..."
+# Menu functions
+show_menu() {
+    echo -e "${CYAN}=== Backhaul Watchdog Menu ===${NC}"
+    echo -e "1. Add ping target"
+    echo -e "2. Remove ping target"
+    echo -e "3. Edit configuration"
+    echo -e "4. Restart watchdog service"
+    echo -e "5. Update from GitHub"
+    echo -e "6. Uninstall watchdog"
+    echo -e "7. Show help"
+    echo -e "8. Exit"
+    echo -e "${CYAN}=============================${NC}"
 }
 
-validate_endpoint() {
-  local ep=$1
-  if [[ "$ep" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]{1,5}$ ]]; then
-    IFS=':' read -r ip port <<< "$ep"
-    IFS='.' read -r -a octets <<< "$ip"
-    for octet in "${octets[@]}"; do
-      if ((octet < 0 || octet > 255)); then return 1; fi
-    done
-    if ((port > 0 && port <= 65535)); then
-      return 0
+add_ping_target() {
+    read -rp "$(echo -e ${CYAN}"Enter new ping target (IP or domain): "${NC})" NEW_TARGET
+    if ! validate_ip_or_domain "$NEW_TARGET"; then
+        echo -e "${RED}❌ Invalid IP or domain format${NC}"
+        return 1
     fi
-  fi
-  return 1
+    PING_TARGETS="$PING_TARGETS $NEW_TARGET"
+    sed -i "s|^PING_TARGETS=.*|PING_TARGETS=\"$PING_TARGETS\"|" "$CONFIG_FILE"
+    echo -e "${GREEN}✅ Added $NEW_TARGET to ping targets${NC}"
 }
 
-initial_setup() {
-  echo "# Backhaul endpoints config file" > "$CONFIG_FILE"
-  read -p "How many servers do you want to add? " count
-  if ! [[ "$count" =~ ^[0-9]+$ ]] || ((count <= 0)); then
-    echo "Invalid number. Returning to menu."
-    sleep 2
-    return
-  fi
-
-  for ((i=1; i<=count; i++)); do
-    while true; do
-      read -p "Enter endpoint #$i (IP:PORT): " line
-      if validate_endpoint "$line"; then
-        echo "$line" >> "$CONFIG_FILE"
-        break
-      else
-        echo "Invalid format, try again."
-      fi
-    done
-  done
-
-  echo "Creating systemd service..."
-  cat > "$SERVICE_FILE" <<EOF
-[Unit]
-Description=Backhaul Watchdog Service
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=/bin/bash $WATCHDOG_SCRIPT run
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-  systemctl daemon-reload
-  systemctl enable "$SERVICE_NAME"
-  systemctl restart "$SERVICE_NAME"
-  echo "Service started successfully. Please reboot to ensure full operation."
-  read -p "Press Enter to return to menu..."
+remove_ping_target() {
+    echo -e "${CYAN}Current ping targets: $PING_TARGETS${NC}"
+    read -rp "$(echo -e ${CYAN}"Enter target to remove: "${NC})" TARGET
+    if [[ ! " $PING_TARGETS " =~ " $TARGET " ]]; then
+        echo -e "${RED}❌ Target not found${NC}"
+        return 1
+    fi
+    PING_TARGETS=$(echo "$PING_TARGETS" | sed "s/\b$TARGET\b//g" | tr -s ' ')
+    sed -i "s|^PING_TARGETS=.*|PING_TARGETS=\"$PING_TARGETS\"|" "$CONFIG_FILE"
+    echo -e "${GREEN}✅ Removed $TARGET from ping targets${NC}"
 }
 
 edit_config() {
-  if [ ! -f "$CONFIG_FILE" ]; then
-    echo "Config file not found. Run initial setup first."
-    sleep 2
-    return
-  fi
-  nano "$CONFIG_FILE"
+    read -rp "$(echo -e ${CYAN}"Enter max latency (ms) [$MAX_LATENCY]: "${NC})" NEW_LATENCY
+    NEW_LATENCY=${NEW_LATENCY:-$MAX_LATENCY}
+    read -rp "$(echo -e ${CYAN}"Enter check interval (seconds) [$CHECK_INTERVAL]: "${NC})" NEW_INTERVAL
+    NEW_INTERVAL=${NEW_INTERVAL:-$CHECK_INTERVAL}
+    read -rp "$(echo -e ${CYAN}"Enter service name [$SERVICE_NAME]: "${NC})" NEW_SERVICE
+    NEW_SERVICE=${NEW_SERVICE:-$SERVICE_NAME}
+    read -rp "$(echo -e ${CYAN}"Enter cooldown (seconds) [$COOLDOWN]: "${NC})" NEW_COOLDOWN
+    NEW_COOLDOWN=${NEW_COOLDOWN:-$COOLDOWN}
+
+    if ! validate_numeric "$NEW_LATENCY" || ! validate_numeric "$NEW_INTERVAL" || ! validate_numeric "$NEW_COOLDOWN"; then
+        echo -e "${RED}❌ MAX_LATENCY, CHECK_INTERVAL, and COOLDOWN must be numeric${NC}"
+        return 1
+    fi
+
+    sed -i "s|^MAX_LATENCY=.*|MAX_LATENCY=$NEW_LATENCY|" "$CONFIG_FILE"
+    sed -i "s|^CHECK_INTERVAL=.*|CHECK_INTERVAL=$NEW_INTERVAL|" "$CONFIG_FILE"
+    sed -i "s|^SERVICE_NAME=.*|SERVICE_NAME=\"$NEW_SERVICE\"|" "$CONFIG_FILE"
+    sed -i "s|^COOLDOWN=.*|COOLDOWN=$NEW_COOLDOWN|" "$CONFIG_FILE"
+    echo -e "${GREEN}✅ Configuration updated${NC}"
 }
 
 restart_service() {
-  systemctl restart "$SERVICE_NAME"
-  echo "Watchdog service restarted."
-  read -p "Press Enter to return to menu..."
+    systemctl restart backhaul-watchdog.timer || {
+        echo -e "${RED}❌ Failed to restart watchdog service${NC}"
+        return 1
+    }
+    echo -e "${GREEN}✅ Watchdog service restarted${NC}"
 }
 
-update_watchdog() {
-  echo "Updating watchdog script and service..."
-  curl -fsSL "$GITHUB_REPO/backhaul_watchdog.sh" -o "$WATCHDOG_SCRIPT" || { echo "Failed to download script"; sleep 2; return; }
-  curl -fsSL "$GITHUB_REPO/backhaul_watchdog.service" -o "$SERVICE_FILE" || { echo "Failed to download service file"; sleep 2; return; }
-
-  chmod +x "$WATCHDOG_SCRIPT"
-  systemctl daemon-reload
-  systemctl restart "$SERVICE_NAME"
-  echo "Update complete and service restarted."
-  read -p "Press Enter to return to menu..."
+show_help() {
+    echo -e "${CYAN}=== Backhaul Watchdog Help ===${NC}"
+    echo -e "This tool monitors the Backhaul tunneling service by pinging specified targets."
+    echo -e "If a target is unreachable or latency exceeds MAX_LATENCY, the service is restarted."
+    echo -e "\nConfiguration file: $CONFIG_FILE"
+    echo -e "Logs: journalctl -u backhaul-watchdog"
+    echo -e "\nMenu options:"
+    echo -e "1. Add ping target: Add a new IP or domain to ping."
+    echo -e "2. Remove ping target: Remove an existing ping target."
+    echo -e "3. Edit configuration: Change MAX_LATENCY, CHECK_INTERVAL, SERVICE_NAME, or COOLDOWN."
+    echo -e "4. Restart watchdog: Restart the watchdog service."
+    echo -e "5. Update from GitHub: Update the watchdog to the latest version."
+    echo -e "6. Uninstall watchdog: Remove all files and services."
+    echo -e "7. Show help: Display this help message."
+    echo -e "8. Exit: Close the menu."
+    echo -e "${CYAN}=============================${NC}"
 }
 
-remove_watchdog() {
-  echo "Removing watchdog service and config files..."
-  systemctl stop "$SERVICE_NAME"
-  systemctl disable "$SERVICE_NAME"
-  rm -f "$SERVICE_FILE" "$CONFIG_FILE" "$WATCHDOG_SCRIPT"
-  systemctl daemon-reload
-  echo "Removed all related files and service."
-  read -p "Press Enter to return to menu..."
+# Watchdog logic
+watchdog_loop() {
+    mkdir -p "$STATE_DIR"
+    chmod 700 "$STATE_DIR"
+
+    if check_cooldown "$STATE_FILE" "$COOLDOWN"; then
+        echo -e "${CYAN}[Watchdog] ⏳ Skipping - last restart was recent${NC}"
+        exit 0
+    fi
+
+    if check_ssh_session; then
+        echo -e "${CYAN}[Watchdog] 👤 SSH session detected, skipping restart${NC}"
+        exit 0
+    fi
+
+    for TARGET in $PING_TARGETS; do
+        LATENCY=$(check_latency "$TARGET")
+        if [[ "$LATENCY" == "unreachable" ]]; then
+            echo -e "${RED}[Watchdog] ❌ Ping to $TARGET failed, restarting $SERVICE_NAME...${NC}"
+            restart_service_safe "$SERVICE_NAME" "$STATE_FILE"
+            exit 0
+        elif (( $(echo "$LATENCY > $MAX_LATENCY" | bc -l) )); then
+            echo -e "${RED}[Watchdog] ❌ High latency ($LATENCY ms) to $TARGET, restarting $SERVICE_NAME...${NC}"
+            restart_service_safe "$SERVICE_NAME" "$STATE_FILE"
+            exit 0
+        fi
+    done
+
+    echo -e "${GREEN}[Watchdog] ✅ All targets are reachable with acceptable latency${NC}"
 }
 
-while true; do
-  clear
-  cat <<EOF
-╔════════════════════════════════════════════════════════════════════════╗
-║ 🔧  Developed by @powermatin – Backhaul Watchdog Control Panel        ║
-╚════════════════════════════════════════════════════════════════════════╝
-
-│ Initial setup (add endpoints)                             [1] │
-│ Edit configuration file                                   [2] │
-│ Restart watchdog service                                  [3] │
-│ Update watchdog script and service                        [4] │
-│ Remove service and config file                            [5] │
-│ Help (Full usage guide)                                   [6] │
-│ Exit menu                                                 [0] │
- 
-╚════════════════════════════════════════════════════════════════════════╝
-EOF
-  read -p "👉 Select an option by number: " choice
-
-  case "$choice" in
-    1) initial_setup ;;
-    2) edit_config ;;
-    3) restart_service ;;
-    4) update_watchdog ;;
-    5) remove_watchdog ;;
-    6) print_help ;;
-    0) echo "Goodbye!"; exit 0 ;;
-    *) echo "Invalid option"; sleep 1.5 ;;
-  esac
-done
+# Main logic
+if [[ "${1:-}" == "--watchdog" ]]; then
+    watchdog_loop
+else
+    while true; do
+        show_menu
+        read -rp "$(echo -e ${CYAN}"Select an option [1-8]: "${NC})" OPTION
+        case $OPTION in
+            1) add_ping_target ;;
+            2) remove_ping_target ;;
+            3) edit_config ;;
+            4) restart_service ;;
+            5) bash "$SCRIPT_DIR/update.sh" ;;
+            6) bash "$SCRIPT_DIR/uninstall.sh" && exit 0 ;;
+            7) show_help ;;
+            8) echo -e "${GREEN}👋 Exiting...${NC}" && exit 0 ;;
+            *) echo -e "${RED}❌ Invalid option${NC}" ;;
+        esac
+        read -rp "$(echo -e ${YELLOW}"Press Enter to continue...${NC})"
+    done
+fi

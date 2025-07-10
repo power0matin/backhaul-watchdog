@@ -1,0 +1,13 @@
+[Unit]
+Description=Backhaul Watchdog Service for Monitoring Tunnels
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/backhaul_watchdog/backhaul_watchdog.sh --watchdog
+Restart=always
+RestartSec=3
+LimitNOFILE=1048576
+
+[Install]
+WantedBy=multi-user.target
