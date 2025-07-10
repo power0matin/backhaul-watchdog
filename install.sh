@@ -35,24 +35,17 @@ mkdir -p "$SCRIPT_DIR" "$CONFIG_DIR" "$SYSTEMD_DIR"
 
 # Copy files
 echo -e "${GREEN}📝 Copying files...${NC}"
-# Check if running from cloned repo or curl
-if [[ -d "core" && -n "$(ls -A core/*.sh)" ]]; then
-    cp core/*.sh "$SCRIPT_DIR/" || {
-        echo -e "${RED}❌ Failed to copy core scripts${NC}"
-        logger -t backhaul-watchdog "Failed to copy core scripts"
-        exit 1
-    }
-else
-    # Download scripts directly if core/ is not present
-    for script in backhaul_watchdog.sh helpers.sh update.sh uninstall.sh; do
-        curl -Ls "https://raw.githubusercontent.com/power0matin/backhaul-watchdog/main/core/$script" -o "$SCRIPT_DIR/$script" || {
-            echo -e "${RED}❌ Failed to download $script${NC}"
-            logger -t backhaul-watchdog "Failed to download $script"
-            exit 1
-        }
-    done
+if [[ ! -d "core" || -z "$(ls -A core/*.sh)" ]]; then
+    echo -e "${RED}❌ Core directory or scripts not found${NC}"
+    logger -t backhaul-watchdog "Core directory or scripts not found"
+    exit 1
 fi
-cp config/config_example.conf "$CONFIG_DIR/backhaul_watchdog.conf" || {
+cp core/*.sh "$SCRIPT_DIR/" || {
+    echo -e "${RED}❌ Failed to copy core scripts${NC}"
+    logger -t backhaul-watchdog "Failed to copy core scripts"
+    exit 1
+}
+cp config/config_example.conf "$CONFIG_DIR/" || {
     echo -e "${RED}❌ Failed to copy config file${NC}"
     logger -t backhaul-watchdog "Failed to copy config file"
     exit 1
@@ -80,7 +73,7 @@ cp install.sh /usr/local/bin/ || {
 
 # Set permissions
 chmod +x "$SCRIPT_DIR/"*.sh /usr/local/bin/install.sh
-chmod 600 "$CONFIG_DIR/backhaul_watchdog.conf"
+chmod 600 "$CONFIG_DIR/config_example.conf"
 
 # Unmask service if masked
 if systemctl is-enabled backhaul-watchdog.service 2>/dev/null | grep -q "masked"; then
