@@ -91,7 +91,7 @@ OnUnitActiveSec=${CHECK_INTERVAL}s
 Unit=backhaul-watchdog.service
 
 [Install]
-WantedBy=timers.target
+WantedBy=multi-user.target
 EOF
 
 # Reload systemd
