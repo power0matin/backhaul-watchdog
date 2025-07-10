@@ -21,8 +21,6 @@ SCRIPT_DIR="/usr/local/bin/backhaul_watchdog"
 CONFIG_DIR="/etc/backhaul_watchdog"
 SYSTEMD_DIR="/etc/systemd/system"
 TEMP_DIR="/tmp/backhaul-watchdog-install"
-
-# Repository URL
 REPO_URL="https://github.com/power0matin/backhaul-watchdog"
 
 # Check dependencies
@@ -41,26 +39,50 @@ mkdir -p "$SCRIPT_DIR" "$CONFIG_DIR" "$SYSTEMD_DIR" "$TEMP_DIR"
 echo -e "${GREEN}📝 Copying files...${NC}"
 if [[ -d "core" && -n "$(ls -A core/*.sh 2>/dev/null)" ]]; then
     # Running from local repository
-    cp core/backhaul_watchdog.sh core/helpers.sh core/update.sh core/uninstall.sh "$SCRIPT_DIR/" || {
-        echo -e "${RED}❌ Failed to copy core scripts${NC}"
-        logger -t backhaul-watchdog "Failed to copy core scripts"
+    for script in backhaul_watchdog.sh helpers.sh update.sh uninstall.sh; do
+        if [[ ! -f "core/$script" ]]; then
+            echo -e "${RED}❌ $script not found in core/${NC}"
+            logger -t backhaul-watchdog "$script not found in core/"
+            exit 1
+        fi
+        cp "core/$script" "$SCRIPT_DIR/" || {
+            echo -e "${RED}❌ Failed to copy $script${NC}"
+            logger -t backhaul-watchdog "Failed to copy $script"
+            exit 1
+        }
+    done
+    if [[ ! -f "config/config_example.conf" ]]; then
+        echo -e "${RED}❌ config_example.conf not found in config/${NC}"
+        logger -t backhaul-watchdog "config_example.conf not found in config/"
         exit 1
-    }
+    fi
     cp config/config_example.conf "$CONFIG_DIR/backhaul_watchdog.conf" || {
         echo -e "${RED}❌ Failed to copy config file${NC}"
         logger -t backhaul-watchdog "Failed to copy config file"
         exit 1
     }
+    if [[ ! -f "config/setup_endpoints.sh" ]]; then
+        echo -e "${RED}❌ setup_endpoints.sh not found in config/${NC}"
+        logger -t backhaul-watchdog "setup_endpoints.sh not found in config/"
+        exit 1
+    fi
     cp config/setup_endpoints.sh "$SCRIPT_DIR/" || {
         echo -e "${RED}❌ Failed to copy setup script${NC}"
         logger -t backhaul-watchdog "Failed to copy setup script"
         exit 1
     }
-    cp systemd/backhaul_watchdog.service systemd/backhaul_watchdog.timer "$SYSTEMD_DIR/" || {
-        echo -e "${RED}❌ Failed to copy systemd files${NC}"
-        logger -t backhaul-watchdog "Failed to copy systemd files"
-        exit 1
-    }
+    for file in backhaul_watchdog.service backhaul_watchdog.timer; do
+        if [[ ! -f "systemd/$file" ]]; then
+            echo -e "${RED}❌ $file not found in systemd/${NC}"
+            logger -t backhaul-watchdog "$file not found in systemd/"
+            exit 1
+        fi
+        cp "systemd/$file" "$SYSTEMD_DIR/" || {
+            echo -e "${RED}❌ Failed to copy $file${NC}"
+            logger -t backhaul-watchdog "Failed to copy $file"
+            exit 1
+        }
+    done
     cp install.sh /usr/local/bin/ || {
         echo -e "${RED}❌ Failed to copy install script${NC}"
         logger -t backhaul-watchdog "Failed to copy install script"
@@ -113,6 +135,14 @@ if systemctl is-enabled backhaul-watchdog.service 2>/dev/null | grep -q "masked"
     systemctl unmask backhaul-watchdog.service || {
         echo -e "${RED}❌ Failed to unmask backhaul-watchdog.service${NC}"
         logger -t backhaul-watchdog "Failed to unmask backhaul-watchdog.service"
+        exit 1
+    }
+fi
+if systemctl is-enabled backhaul-watchdog.timer 2>/dev/null | grep -q "masked"; then
+    echo -e "${GREEN}🔧 Unmasking backhaul-watchdog.timer...${NC}"
+    systemctl unmask backhaul-watchdog.timer || {
+        echo -e "${RED}❌ Failed to unmask backhaul-watchdog.timer${NC}"
+        logger -t backhaul-watchdog "Failed to unmask backhaul-watchdog.timer"
         exit 1
     }
 fi
