@@ -35,16 +35,23 @@ mkdir -p "$SCRIPT_DIR" "$CONFIG_DIR" "$SYSTEMD_DIR"
 
 # Copy files
 echo -e "${GREEN}📝 Copying files...${NC}"
-if [[ ! -d "core" || -z "$(ls -A core/*.sh)" ]]; then
-    echo -e "${RED}❌ Core directory or scripts not found${NC}"
-    logger -t backhaul-watchdog "Core directory or scripts not found"
-    exit 1
+# Check if running from cloned repo or curl
+if [[ -d "core" && -n "$(ls -A core/*.sh)" ]]; then
+    cp core/*.sh "$SCRIPT_DIR/" || {
+        echo -e "${RED}❌ Failed to copy core scripts${NC}"
+        logger -t backhaul-watchdog "Failed to copy core scripts"
+        exit 1
+    }
+else
+    # Download scripts directly if core/ is not present
+    for script in backhaul_watchdog.sh helpers.sh update.sh uninstall.sh; do
+        curl -Ls "https://raw.githubusercontent.com/power0matin/backhaul-watchdog/main/core/$script" -o "$SCRIPT_DIR/$script" || {
+            echo -e "${RED}❌ Failed to download $script${NC}"
+            logger -t backhaul-watchdog "Failed to download $script"
+            exit 1
+        }
+    done
 fi
-cp core/*.sh "$SCRIPT_DIR/" || {
-    echo -e "${RED}❌ Failed to copy core scripts${NC}"
-    logger -t backhaul-watchdog "Failed to copy core scripts"
-    exit 1
-}
 cp config/config_example.conf "$CONFIG_DIR/backhaul_watchdog.conf" || {
     echo -e "${RED}❌ Failed to copy config file${NC}"
     logger -t backhaul-watchdog "Failed to copy config file"
