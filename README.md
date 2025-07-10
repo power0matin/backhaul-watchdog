@@ -1,50 +1,62 @@
+
 # 🔒 Backhaul Watchdog
 
 A minimal, production-ready watchdog script to monitor IP:PORT endpoints and auto-restart your `backhaul` service on failures.  
 Built for system administrators who demand simple, reliable uptime automation.
 
+
 ## ✨ Features
 
-- Monitor endpoints via TLS, TCP, Ping, and cURL.
-- Automatic restart of a backhaul service on failure.
-- Cooldown-based restart control (prevents restart loops).
-- Interactive control panel for configuration and management.
-- Lightweight and dependency-friendly (just bash, curl, nc, ping, openssl).
+- ✅ Monitor endpoints via **TLS**, **TCP**, **Ping**, and **cURL**.
+- 🔁 Automatic restart of a **Backhaul** service on failure.
+- 🧠 Cooldown-based restart logic (prevents restart loops).
+- ⚙️ Simple **interactive CLI menu** for configuration and management.
+- 📦 Lightweight: Requires only basic tools (`bash`, `curl`, `nc`, `ping`, `openssl`).
+- 🛡️ Designed with **security** and **stability** in mind.
+- 🔒 Root-only by default for enhanced system control.
+
 
 ## 🚀 Quick Install
 
-Install with a single command:
+You can install Backhaul Watchdog with a single command:
 
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/power0matin/backhaul-watchdog/main/install.sh)
 ```
 
-Then run:
+After installation, launch the CLI menu using:
 
 ```bash
 backhaul
 ```
 
-And use the menu!
+And configure everything interactively.
 
-```
 
 ## 🛠 Configuration
 
-Edit `backhaul_watchdog.conf`:
+All endpoint monitoring is configured inside `backhaul_watchdog.conf`.
 
+### Format:
+```text
+IP:PORT
 ```
 
-# Format: IP:PORT
-
+### Example:
+```text
 192.168.1.1:443
 8.8.8.8:53
+google.com:443
+```
 
-````
+The script parses this file and performs checks using different protocols depending on the port and type.
+
 
 ## 🔁 Systemd Integration
 
-The setup menu automatically creates a service:
+The CLI menu auto-generates and enables a `systemd` unit to run the watchdog in the background.
+
+Example service file:
 
 ```ini
 [Unit]
@@ -58,29 +70,79 @@ RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
-````
+```
 
-## 📂 Files
+Use standard `systemctl` commands to manage it:
 
-| File                      | Description           |
-| ------------------------- | --------------------- |
-| `backhaul_watchdog.sh`    | Main watchdog script  |
-| `config_example.conf`     | Example configuration |
-| `systemd_example.service` | Example systemd unit  |
-| `README.md`               | You're reading it     |
-| `LICENSE`                 | MIT License           |
+```bash
+sudo systemctl restart backhaul
+sudo systemctl stop backhaul
+sudo systemctl status backhaul
+```
+
+
+## 📂 Project Structure
+
+| File/Directory            | Description                            |
+| ------------------------- | -------------------------------------- |
+| `backhaul_watchdog.sh`    | Main watchdog script                   |
+| `install.sh`              | One-liner installation script          |
+| `uninstall.sh`            | Cleanup/uninstall script (optional)    |
+| `config_example.conf`     | Example configuration file             |
+| `backhaul_watchdog.conf`  | Active user configuration file         |
+| `systemd_example.service` | Example systemd service unit           |
+| `README.md`               | This file                              |
+| `LICENSE`                 | MIT License                            |
+
 
 ## 👨‍💻 Developer & Maintainer
 
-This project was originally created by [MH-Zia](https://github.com/MH-Zia).
+This project was originally created by [**MH-Zia**](https://github.com/MH-Zia).
 
-It has been actively maintained and enhanced by **[@powermatin](https://github.com/power0matin)**.
-
-Feel free to open issues or contribute.
-
-If you find this project helpful, please give it a ⭐️ star!
+It is now actively maintained and improved by [**@powermatin**](https://github.com/power0matin).  
+Issues, contributions, and stars are welcome!
 
 
 ## 📜 License
 
-MIT — Use it freely, even commercially. Just give credit!
+This project is licensed under the **MIT License**.  
+You can freely use, modify, and distribute it for personal or commercial purposes — just give credit.
+
+
+## 🧹 Full Uninstall Instructions
+
+To **completely remove** Backhaul Watchdog from your system:
+
+```bash
+# Stop and disable the systemd service
+sudo systemctl stop backhaul
+sudo systemctl disable backhaul
+
+# Remove the service file
+sudo rm -f /etc/systemd/system/backhaul.service
+sudo systemctl daemon-reload
+
+# Remove the script and configuration files
+sudo rm -f /usr/bin/backhaul
+sudo rm -rf /root/backhaul_watchdog.sh
+sudo rm -rf /root/backhaul_watchdog.conf
+
+# Optional: remove logs if any
+sudo rm -f /var/log/backhaul_watchdog.log
+
+echo "✅ Backhaul Watchdog has been fully uninstalled."
+```
+
+Or, if you've added an `uninstall.sh` script:
+
+```bash
+sudo bash uninstall.sh
+```
+
+
+> ⚠️ Note: Make sure to double-check file paths if you've customized them during install.
+
+
+Thanks for using **Backhaul Watchdog** 🙌  
+If you liked it, give it a ⭐️ star and share it with sysadmin friends!
+
