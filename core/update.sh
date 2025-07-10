@@ -19,7 +19,7 @@ fi
 
 echo -e "${CYAN}🔄 Updating Backhaul Watchdog...${NC}"
 
-# Repository URL (replace with your actual GitHub repo)
+# Repository URL
 REPO_URL="https://github.com/yourusername/backhaul-watchdog"
 TEMP_DIR="/tmp/backhaul-watchdog-update"
 
@@ -28,6 +28,7 @@ echo -e "${GREEN}📥 Downloading latest version...${NC}"
 rm -rf "$TEMP_DIR"
 git clone "$REPO_URL" "$TEMP_DIR" || {
     echo -e "${RED}❌ Failed to clone repository${NC}"
+    logger -t backhaul-watchdog "Failed to clone repository from $REPO_URL"
     exit 1
 }
 
@@ -36,7 +37,9 @@ echo -e "${GREEN}📝 Updating files...${NC}"
 cp -f "$TEMP_DIR/core/"*.sh "$SCRIPT_DIR/"
 cp -f "$TEMP_DIR/install.sh" /usr/local/bin/
 cp -f "$TEMP_DIR/systemd/backhaul_watchdog.service" /etc/systemd/system/
+cp -f "$TEMP_DIR/systemd/backhaul_watchdog.timer" /etc/systemd/system/
 cp -f "$TEMP_DIR/config/config_example.conf" "$CONFIG_DIR/"
+cp -f "$TEMP_DIR/config/setup_endpoints.sh" "$SCRIPT_DIR/"
 chmod +x "$SCRIPT_DIR/"*.sh /usr/local/bin/install.sh
 chmod 600 "$CONFIG_DIR/config_example.conf"
 
@@ -49,3 +52,4 @@ systemctl restart backhaul-watchdog.timer
 # Clean up
 rm -rf "$TEMP_DIR"
 echo -e "${GREEN}✅ Update complete!${NC}"
+logger -t backhaul-watchdog "Update completed successfully"

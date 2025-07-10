@@ -5,6 +5,7 @@ set -euo pipefail
 check_root() {
     if [[ $EUID -ne 0 ]]; then
         echo -e "\033[0;31m❌ This script must be run as root\033[0m"
+        logger -t backhaul-watchdog "Script execution failed: root privileges required"
         exit 1
     fi
 }
@@ -14,11 +15,13 @@ load_config() {
     local config_file="$1"
     if [[ ! -f "$config_file" ]]; then
         echo -e "\033[0;31m❌ Config file not found at $config_file\033[0m"
+        logger -t backhaul-watchdog "Config file not found: $config_file"
         exit 1
     fi
     source "$config_file"
     if [[ -z "$PING_TARGETS" || -z "$MAX_LATENCY" || -z "$CHECK_INTERVAL" || -z "$SERVICE_NAME" || -z "$COOLDOWN" ]]; then
         echo -e "\033[0;31m❌ Invalid or missing configuration in $config_file\033[0m"
+        logger -t backhaul-watchdog "Invalid configuration in $config_file"
         exit 1
     fi
 }
@@ -72,6 +75,7 @@ restart_service_safe() {
     local state_file="$2"
     systemctl restart "$service" || {
         echo -e "\033[0;31m❌ Failed to restart $service\033[0m"
+        logger -t backhaul-watchdog "Failed to restart service: $service"
         exit 1
     }
     date +%s > "$state_file"

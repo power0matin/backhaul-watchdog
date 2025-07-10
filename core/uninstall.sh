@@ -10,6 +10,7 @@ NC='\033[0m'
 # Check root privileges
 if [[ $EUID -ne 0 ]]; then
     echo -e "${RED}❌ This script must be run as root${NC}"
+    logger -t backhaul-watchdog "Uninstallation failed: root privileges required"
     exit 1
 fi
 
@@ -19,6 +20,7 @@ echo -e "${CYAN}🗑️ Uninstalling Backhaul Watchdog...${NC}"
 echo -e "${GREEN}🛑 Stopping services...${NC}"
 systemctl stop backhaul-watchdog.timer || true
 systemctl disable backhaul-watchdog.timer || true
+logger -t backhaul-watchdog "Stopped and disabled backhaul-watchdog.timer"
 
 # Remove systemd files
 echo -e "${GREEN}🗑️ Removing systemd files...${NC}"
@@ -42,3 +44,4 @@ systemctl daemon-reexec
 systemctl daemon-reload
 
 echo -e "${GREEN}✅ Uninstallation complete!${NC}"
+logger -t backhaul-watchdog "Uninstallation completed successfully"

@@ -47,6 +47,7 @@ add_ping_target() {
     PING_TARGETS="$PING_TARGETS $NEW_TARGET"
     sed -i "s|^PING_TARGETS=.*|PING_TARGETS=\"$PING_TARGETS\"|" "$CONFIG_FILE"
     echo -e "${GREEN}✅ Added $NEW_TARGET to ping targets${NC}"
+    logger -t backhaul-watchdog "Added ping target: $NEW_TARGET"
 }
 
 remove_ping_target() {
@@ -59,9 +60,12 @@ remove_ping_target() {
     PING_TARGETS=$(echo "$PING_TARGETS" | sed "s/\b$TARGET\b//g" | tr -s ' ')
     sed -i "s|^PING_TARGETS=.*|PING_TARGETS=\"$PING_TARGETS\"|" "$CONFIG_FILE"
     echo -e "${GREEN}✅ Removed $TARGET from ping targets${NC}"
+    logger -t backhaul-watchdog "Removed ping target: $TARGET"
 }
 
 edit_config() {
+    read -rp "$(echo -e ${CYAN}"Enter ping targets (space-separated IPs or domains) [$PING_TARGETS]: "${NC})" NEW_PING_TARGETS
+    NEW_PING_TARGETS=${NEW_PING_TARGETS:-$PING_TARGETS}
     read -rp "$(echo -e ${CYAN}"Enter max latency (ms) [$MAX_LATENCY]: "${NC})" NEW_LATENCY
     NEW_LATENCY=${NEW_LATENCY:-$MAX_LATENCY}
     read -rp "$(echo -e ${CYAN}"Enter check interval (seconds) [$CHECK_INTERVAL]: "${NC})" NEW_INTERVAL
@@ -70,37 +74,61 @@ edit_config() {
     NEW_SERVICE=${NEW_SERVICE:-$SERVICE_NAME}
     read -rp "$(echo -e ${CYAN}"Enter cooldown (seconds) [$COOLDOWN]: "${NC})" NEW_COOLDOWN
     NEW_COOLDOWN=${NEW_COOLDOWN:-$COOLDOWN}
+    read -rp "$(echo -e ${CYAN}"Enter Telegram bot token (leave empty to disable) [$TELEGRAM_BOT_TOKEN]: "${NC})" NEW_TELEGRAM_BOT_TOKEN
+    NEW_TELEGRAM_BOT_TOKEN=${NEW_TELEGRAM_BOT_TOKEN:-$TELEGRAM_BOT_TOKEN}
+    read -rp "$(echo -e ${CYAN}"Enter Telegram chat ID (leave empty to disable) [$TELEGRAM_CHAT_ID]: "${NC})" NEW_TELEGRAM_CHAT_ID
+    NEW_TELEGRAM_CHAT_ID=${NEW_TELEGRAM_CHAT_ID:-$TELEGRAM_CHAT_ID}
 
     if ! validate_numeric "$NEW_LATENCY" || ! validate_numeric "$NEW_INTERVAL" || ! validate_numeric "$NEW_COOLDOWN"; then
         echo -e "${RED}❌ MAX_LATENCY, CHECK_INTERVAL, and COOLDOWN must be numeric${NC}"
         return 1
     fi
 
+    for TARGET in $NEW_PING_TARGETS; do
+        if ! validate_ip_or_domain "$TARGET"; then
+            echo -e "${RED}❌ Invalid IP or domain: $TARGET${NC}"
+            return 1
+        fi
+    done
+
+    sed -i "s|^PING_TARGETS=.*|PING_TARGETS=\"$NEW_PING_TARGETS\"|" "$CONFIG_FILE"
     sed -i "s|^MAX_LATENCY=.*|MAX_LATENCY=$NEW_LATENCY|" "$CONFIG_FILE"
     sed -i "s|^CHECK_INTERVAL=.*|CHECK_INTERVAL=$NEW_INTERVAL|" "$CONFIG_FILE"
     sed -i "s|^SERVICE_NAME=.*|SERVICE_NAME=\"$NEW_SERVICE\"|" "$CONFIG_FILE"
     sed -i "s|^COOLDOWN=.*|COOLDOWN=$NEW_COOLDOWN|" "$CONFIG_FILE"
+    sed -i "s|^TELEGRAM_BOT_TOKEN=.*|TELEGRAM_BOT_TOKEN=\"$NEW_TELEGRAM_BOT_TOKEN\"|" "$CONFIG_FILE"
+    sed -i "s|^TELEGRAM_CHAT_ID=.*|TELEGRAM_CHAT_ID=\"$NEW_TELEGRAM_CHAT_ID\"|" "$CONFIG_FILE"
+
+    # Update timer with new CHECK_INTERVAL
+    sed -i "s/OnUnitActiveSec=.*/OnUnitActiveSec=${NEW_INTERVAL}s/" /etc/systemd/system/backhaul-watchdog.timer
+    systemctl daemon-reload
+    systemctl restart backhaul-watchdog.timer
+
     echo -e "${GREEN}✅ Configuration updated${NC}"
+    logger -t backhaul-watchdog "Configuration updated: MAX_LATENCY=$NEW_LATENCY, CHECK_INTERVAL=$NEW_INTERVAL, SERVICE_NAME=$NEW_SERVICE, COOLDOWN=$NEW_COOLDOWN"
 }
 
 restart_service() {
     systemctl restart backhaul-watchdog.timer || {
         echo -e "${RED}❌ Failed to restart watchdog service${NC}"
+        logger -t backhaul-watchdog "Failed to restart watchdog service"
         return 1
     }
     echo -e "${GREEN}✅ Watchdog service restarted${NC}"
+    logger -t backhaul-watchdog "Watchdog service restarted"
 }
 
 show_help() {
     echo -e "${CYAN}=== Backhaul Watchdog Help ===${NC}"
     echo -e "This tool monitors the Backhaul tunneling service by pinging specified targets."
     echo -e "If a target is unreachable or latency exceeds MAX_LATENCY, the service is restarted."
-    echo -e "\nConfiguration file: $CONFIG_FILE"
-    echo -e "Logs: journalctl -u backhaul-watchdog"
+    echo -e "\nConfiguration file: $CONFIG踢
+CONFIG_FILE
+    echo -e "Logs: journalctl -t backhaul-watchdog"
     echo -e "\nMenu options:"
     echo -e "1. Add ping target: Add a new IP or domain to ping."
     echo -e "2. Remove ping target: Remove an existing ping target."
-    echo -e "3. Edit configuration: Change MAX_LATENCY, CHECK_INTERVAL, SERVICE_NAME, or COOLDOWN."
+    echo -e "3. Edit configuration: Change MAX_LATENCY, CHECK_INTERVAL, SERVICE_NAME, COOLDOWN, or Telegram settings."
     echo -e "4. Restart watchdog: Restart the watchdog service."
     echo -e "5. Update from GitHub: Update the watchdog to the latest version."
     echo -e "6. Uninstall watchdog: Remove all files and services."
@@ -116,11 +144,13 @@ watchdog_loop() {
 
     if check_cooldown "$STATE_FILE" "$COOLDOWN"; then
         echo -e "${CYAN}[Watchdog] ⏳ Skipping - last restart was recent${NC}"
+        logger -t backhaul-watchdog "Skipping restart due to cooldown"
         exit 0
     fi
 
     if check_ssh_session; then
         echo -e "${CYAN}[Watchdog] 👤 SSH session detected, skipping restart${NC}"
+        logger -t backhaul-watchdog "SSH session detected, skipping restart"
         exit 0
     fi
 
@@ -128,16 +158,34 @@ watchdog_loop() {
         LATENCY=$(check_latency "$TARGET")
         if [[ "$LATENCY" == "unreachable" ]]; then
             echo -e "${RED}[Watchdog] ❌ Ping to $TARGET failed, restarting $SERVICE_NAME...${NC}"
+            logger -t backhaul-watchdog "Ping to $TARGET failed, restarting $SERVICE_NAME"
             restart_service_safe "$SERVICE_NAME" "$STATE_FILE"
+            send_telegram_notification "Ping to $TARGET failed, $SERVICE_NAME restarted"
             exit 0
         elif (( $(echo "$LATENCY > $MAX_LATENCY" | bc -l) )); then
             echo -e "${RED}[Watchdog] ❌ High latency ($LATENCY ms) to $TARGET, restarting $SERVICE_NAME...${NC}"
+            logger -t backhaul-watchdog "High latency ($LATENCY ms) to $TARGET, restarting $SERVICE_NAME"
             restart_service_safe "$SERVICE_NAME" "$STATE_FILE"
+            send_telegram_notification "High latency ($LATENCY ms) to $TARGET, $SERVICE_NAME restarted"
             exit 0
         fi
     done
 
     echo -e "${GREEN}[Watchdog] ✅ All targets are reachable with acceptable latency${NC}"
+    logger -t backhaul-watchdog "All targets reachable with acceptable latency"
+}
+
+# Telegram notification
+send_telegram_notification() {
+    local message="$1"
+    if [[ -n "$TELEGRAM_BOT_TOKEN" && -n "$TELEGRAM_CHAT_ID" ]]; then
+        curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+            -d chat_id="$TELEGRAM_CHAT_ID" \
+            -d text="$message" >/dev/null || {
+            echo -e "${RED}❌ Failed to send Telegram notification${NC}"
+            logger -t backhaul-watchdog "Failed to send Telegram notification"
+        }
+    fi
 }
 
 # Main logic

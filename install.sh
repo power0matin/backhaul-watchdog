@@ -10,6 +10,7 @@ NC='\033[0m'
 # Check root privileges
 if [[ $EUID -ne 0 ]]; then
     echo -e "${RED}❌ This script must be run as root${NC}"
+    logger -t backhaul-watchdog "Installation failed: root privileges required"
     exit 1
 fi
 
@@ -51,3 +52,4 @@ systemctl daemon-reload
 systemctl enable --now backhaul-watchdog.timer
 
 echo -e "${GREEN}✅ Installation complete! Run 'watchdog' to manage the service.${NC}"
+logger -t backhaul-watchdog "Installation completed successfully"
