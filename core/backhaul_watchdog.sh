@@ -26,16 +26,19 @@ load_config "$CONFIG_FILE"
 
 # Menu functions
 show_menu() {
-    echo -e "${CYAN}=== Backhaul Watchdog Menu ===${NC}"
-    echo -e "1. Add ping target"
-    echo -e "2. Remove ping target"
-    echo -e "3. Edit configuration"
-    echo -e "4. Restart watchdog service"
-    echo -e "5. Update from GitHub"
-    echo -e "6. Uninstall watchdog"
-    echo -e "7. Show help"
-    echo -e "8. Exit"
-    echo -e "${CYAN}=============================${NC}"
+    echo -e "${CYAN}╔════════════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║ 🔧  Developed by @powermatin – Backhaul Watchdog Control Panel        ║${NC}"
+    echo -e "${CYAN}╚════════════════════════════════════════════════════════════════════════╝${NC}"
+    echo -e ""
+    echo -e "│ Initial setup (add endpoints)                             [1] │"
+    echo -e "│ Edit configuration file                                   [2] │"
+    echo -e "│ Restart watchdog service                                  [3] │"
+    echo -e "│ Update watchdog script and service                        [4] │"
+    echo -e "│ Remove service and config file                            [5] │"
+    echo -e "│ Help (Full usage guide)                                   [6] │"
+    echo -e "│ Exit menu                                                [0] │"
+    echo -e ""
+    echo -e "${CYAN}╚════════════════════════════════════════════════════════════════════════╝${NC}"
 }
 
 add_ping_target() {
@@ -122,18 +125,16 @@ show_help() {
     echo -e "${CYAN}=== Backhaul Watchdog Help ===${NC}"
     echo -e "This tool monitors the Backhaul tunneling service by pinging specified targets."
     echo -e "If a target is unreachable or latency exceeds MAX_LATENCY, the service is restarted."
-    echo -e "\nConfiguration file: $CONFIG踢
-CONFIG_FILE
+    echo -e "\nConfiguration file: $CONFIG_FILE"
     echo -e "Logs: journalctl -t backhaul-watchdog"
     echo -e "\nMenu options:"
-    echo -e "1. Add ping target: Add a new IP or domain to ping."
-    echo -e "2. Remove ping target: Remove an existing ping target."
-    echo -e "3. Edit configuration: Change MAX_LATENCY, CHECK_INTERVAL, SERVICE_NAME, COOLDOWN, or Telegram settings."
-    echo -e "4. Restart watchdog: Restart the watchdog service."
-    echo -e "5. Update from GitHub: Update the watchdog to the latest version."
-    echo -e "6. Uninstall watchdog: Remove all files and services."
-    echo -e "7. Show help: Display this help message."
-    echo -e "8. Exit: Close the menu."
+    echo -e "1. Initial setup: Add ping targets and configure settings."
+    echo -e "2. Edit configuration: Change MAX_LATENCY, CHECK_INTERVAL, SERVICE_NAME, COOLDOWN, or Telegram settings."
+    echo -e "3. Restart service: Restart the watchdog timer."
+    echo -e "4. Update from GitHub: Update the watchdog to the latest version."
+    echo -e "5. Remove service: Uninstall all files and services."
+    echo -e "6. Help: Display this help message."
+    echo -e "0. Exit: Close the menu."
     echo -e "${CYAN}=============================${NC}"
 }
 
@@ -194,16 +195,15 @@ if [[ "${1:-}" == "--watchdog" ]]; then
 else
     while true; do
         show_menu
-        read -rp "$(echo -e ${CYAN}"Select an option [1-8]: "${NC})" OPTION
+        read -rp "$(echo -e ${CYAN}"👉 Select an option by number: "${NC})" OPTION
         case $OPTION in
-            1) add_ping_target ;;
-            2) remove_ping_target ;;
-            3) edit_config ;;
-            4) restart_service ;;
-            5) bash "$SCRIPT_DIR/update.sh" ;;
-            6) bash "$SCRIPT_DIR/uninstall.sh" && exit 0 ;;
-            7) show_help ;;
-            8) echo -e "${GREEN}👋 Exiting...${NC}" && exit 0 ;;
+            1) bash "$SCRIPT_DIR/setup_endpoints.sh" ;;
+            2) edit_config ;;
+            3) restart_service ;;
+            4) bash "$SCRIPT_DIR/update.sh" ;;
+            5) bash "$SCRIPT_DIR/uninstall.sh" && exit 0 ;;
+            6) show_help ;;
+            0) echo -e "${GREEN}👋 Exiting...${NC}" && exit 0 ;;
             *) echo -e "${RED}❌ Invalid option${NC}" ;;
         esac
         read -rp "$(echo -e ${YELLOW}"Press Enter to continue...${NC})"

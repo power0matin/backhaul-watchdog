@@ -45,7 +45,7 @@ cp core/*.sh "$SCRIPT_DIR/" || {
     logger -t backhaul-watchdog "Failed to copy core scripts"
     exit 1
 }
-cp config/config_example.conf "$CONFIG_DIR/" || {
+cp config/config_example.conf "$CONFIG_DIR/backhaul_watchdog.conf" || {
     echo -e "${RED}❌ Failed to copy config file${NC}"
     logger -t backhaul-watchdog "Failed to copy config file"
     exit 1
@@ -73,7 +73,7 @@ cp install.sh /usr/local/bin/ || {
 
 # Set permissions
 chmod +x "$SCRIPT_DIR/"*.sh /usr/local/bin/install.sh
-chmod 600 "$CONFIG_DIR/config_example.conf"
+chmod 600 "$CONFIG_DIR/backhaul_watchdog.conf"
 
 # Unmask service if masked
 if systemctl is-enabled backhaul-watchdog.service 2>/dev/null | grep -q "masked"; then
@@ -105,7 +105,7 @@ systemctl enable backhaul-watchdog.timer || {
     echo -e "${RED}❌ Failed to enable backhaul-watchdog.timer${NC}"
     logger -t backhaul-watchdog "Failed to enable backhaul-watchdog.timer"
     exit 1
-} 
+}
 systemctl start backhaul-watchdog.timer || {
     echo -e "${RED}❌ Failed to start backhaul-watchdog.timer${NC}"
     logger -t backhaul-watchdog "Failed to start backhaul-watchdog.timer"

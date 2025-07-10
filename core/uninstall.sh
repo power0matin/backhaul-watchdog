@@ -16,23 +16,20 @@ fi
 
 echo -e "${CYAN}🗑️ Uninstalling Backhaul Watchdog...${NC}"
 
-# Stop and disable services
+# Stop services
 echo -e "${GREEN}🛑 Stopping services...${NC}"
-systemctl stop backhaul-watchdog.timer || true
-systemctl disable backhaul-watchdog.timer || true
-logger -t backhaul-watchdog "Stopped and disabled backhaul-watchdog.timer"
+systemctl stop backhaul-watchdog.timer 2>/dev/null || true
+systemctl disable backhaul-watchdog.timer 2>/dev/null || true
+systemctl stop backhaul-watchdog.service 2>/dev/null || true
+systemctl disable backhaul-watchdog.service 2>/dev/null || true
 
 # Remove systemd files
 echo -e "${GREEN}🗑️ Removing systemd files...${NC}"
-rm -f /etc/systemd/system/backhaul-watchdog.service
-rm -f /etc/systemd/system/backhaul-watchdog.timer
+rm -f /etc/systemd/system/backhaul-watchdog.service /etc/systemd/system/backhaul-watchdog.timer
 
-# Remove files
+# Remove watchdog files
 echo -e "${GREEN}🗑️ Removing watchdog files...${NC}"
-rm -rf /etc/backhaul_watchdog
-rm -rf /var/lib/backhaul_watchdog
-rm -rf /usr/local/bin/backhaul_watchdog
-rm -f /usr/local/bin/install.sh
+rm -rf /usr/local/bin/backhaul_watchdog /etc/backhaul_watchdog /var/lib/backhaul_watchdog /usr/local/bin/install.sh
 
 # Remove alias
 echo -e "${GREEN}🗑️ Removing CLI alias...${NC}"
