@@ -78,8 +78,8 @@ chmod 600 "$CONFIG_DIR/backhaul_watchdog.conf"
 # Enable systemd services
 echo -e "${GREEN}🔄 Enabling systemd services...${NC}"
 systemctl daemon-reload
-systemctl enable backhaul-watchdog.timer
-systemctl start backhaul-watchdog.timer
+systemctl enable backhaul_watchdog.timer
+systemctl start backhaul_watchdog.timer
 
 # Create CLI command
 echo -e "${GREEN}🔗 Creating global 'watchdog' command...${NC}"
