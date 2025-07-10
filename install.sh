@@ -105,7 +105,7 @@ systemctl enable backhaul-watchdog.timer || {
     echo -e "${RED}❌ Failed to enable backhaul-watchdog.timer${NC}"
     logger -t backhaul-watchdog "Failed to enable backhaul-watchdog.timer"
     exit 1
-}
+} 
 systemctl start backhaul-watchdog.timer || {
     echo -e "${RED}❌ Failed to start backhaul-watchdog.timer${NC}"
     logger -t backhaul-watchdog "Failed to start backhaul-watchdog.timer"
