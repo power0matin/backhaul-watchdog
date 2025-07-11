@@ -50,8 +50,8 @@ download() {
         echo -e "${RED}❌ File $remote_path is empty or invalid${NC}"
         logger -t backhaul-watchdog "File $remote_path is empty or invalid"
         exit 1
-    }
-
+    fi
+}
 
 echo -e "${GREEN}📥 Downloading files from GitHub...${NC}"
 
