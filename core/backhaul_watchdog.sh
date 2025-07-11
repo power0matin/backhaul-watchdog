@@ -27,7 +27,7 @@ load_config "$CONFIG_FILE"
 # Menu functions
 show_menu() {
     echo -e "${CYAN}╔════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║ 🔧  Developed by @powermatin – Backhaul Watchdog Control Panel        ║${NC}"
+    echo -e "${CYAN}║ 🔧 Developed by @powermatin – Backhaul Watchdog Control Panel          ║${NC}"
     echo -e "${CYAN}╚════════════════════════════════════════════════════════════════════════╝${NC}"
     echo -e ""
     echo -e "│ Initial setup (add endpoints)                             [1] │"
@@ -36,7 +36,7 @@ show_menu() {
     echo -e "│ Update watchdog script and service                        [4] │"
     echo -e "│ Remove service and config file                            [5] │"
     echo -e "│ Help (Full usage guide)                                   [6] │"
-    echo -e "│ Exit menu                                                [0] │"
+    echo -e "│ Exit menu                                                 [0] │"
     echo -e ""
     echo -e "${CYAN}╚════════════════════════════════════════════════════════════════════════╝${NC}"
 }
@@ -138,6 +138,19 @@ show_help() {
     echo -e "${CYAN}=============================${NC}"
 }
 
+# Telegram notification
+send_telegram_notification() {
+    local message="$1"
+    if [[ -n "$TELEGRAM_BOT_TOKEN" && -n "$TELEGRAM_CHAT_ID" ]]; then
+        curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+            -d chat_id="$TELEGRAM_CHAT_ID" \
+            -d text="$message" >/dev/null || {
+            echo -e "${RED}❌ Failed to send Telegram notification${NC}"
+            logger -t backhaul-watchdog "Failed to send Telegram notification"
+        }
+    fi
+}
+
 # Watchdog logic
 watchdog_loop() {
     mkdir -p "$STATE_DIR"
@@ -176,36 +189,23 @@ watchdog_loop() {
     logger -t backhaul-watchdog "All targets reachable with acceptable latency"
 }
 
-# Telegram notification
-send_telegram_notification() {
-    local message="$1"
-    if [[ -n "$TELEGRAM_BOT_TOKEN" && -n "$TELEGRAM_CHAT_ID" ]]; then
-        curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
-            -d chat_id="$TELEGRAM_CHAT_ID" \
-            -d text="$message" >/dev/null || {
-            echo -e "${RED}❌ Failed to send Telegram notification${NC}"
-            logger -t backhaul-watchdog "Failed to send Telegram notification"
-        }
-    fi
-}
-
-# Main logic
+# Entry point
 if [[ "${1:-}" == "--watchdog" ]]; then
     watchdog_loop
 else
     while true; do
         show_menu
-        read -rp "$(echo -e ${CYAN}"👉 Select an option by number: "${NC})" OPTION
-        case $OPTION in
-            1) bash "$SCRIPT_DIR/setup_endpoints.sh" ;;
+        read -rp "$(echo -e ${YELLOW}Select an option [0-6]: ${NC})" choice
+        case "$choice" in
+            1) add_ping_target ;;
             2) edit_config ;;
             3) restart_service ;;
-            4) bash "$SCRIPT_DIR/update.sh" ;;
-            5) bash "$SCRIPT_DIR/uninstall.sh" && exit 0 ;;
+            4) echo -e "${YELLOW}🔄 Update script functionality not implemented yet.${NC}" ;;
+            5) echo -e "${YELLOW}⚠️  Uninstall functionality not implemented yet.${NC}" ;;
             6) show_help ;;
-            0) echo -e "${GREEN}👋 Exiting...${NC}" && exit 0 ;;
+            0) echo -e "${CYAN}👋 Exiting...${NC}"; exit 0 ;;
             *) echo -e "${RED}❌ Invalid option${NC}" ;;
         esac
-        read -rp "$(echo -e ${YELLOW}"Press Enter to continue...${NC})"
+        echo ""
     done
 fi
