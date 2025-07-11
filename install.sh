@@ -38,8 +38,8 @@ mkdir -p "$BASE_DIR" "$CONFIG_DIR" "$TEST_DIR" "$SYSTEMD_DIR"
 
 # Download helper
 download() {
-    local remote_path=$1
-    local local_path=$2
+    local remote_path="$1"
+    local local_path="$2"
     echo -e "${CYAN}⬇️  Downloading $remote_path...${NC}"
     curl -Ls "$REPO_URL/raw/main/$remote_path" -o "$local_path" || {
         echo -e "${RED}❌ Failed to download $remote_path${NC}"
@@ -51,7 +51,7 @@ download() {
         logger -t backhaul-watchdog "File $remote_path is empty or invalid"
         exit 1
     }
-}
+
 
 echo -e "${GREEN}📥 Downloading files from GitHub...${NC}"
 
