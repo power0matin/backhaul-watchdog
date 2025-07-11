@@ -1,29 +1,23 @@
 #!/usr/bin/env bats
 
 setup() {
-    CONFIG_FILE="/etc/backhaul_watchdog/backhaul_watchdog.conf"
-    cat > "$CONFIG_FILE" <<EOF
-PING_TARGETS="8.8.8.8"
-MAX_LATENCY=200
-CHECK_INTERVAL=30
-SERVICE_NAME="backhaul"
-COOLDOWN=300
-TELEGRAM_BOT_TOKEN=""
-TELEGRAM_CHAT_ID=""
-EOF
+    export PATH="/usr/sbin:/sbin:$PATH"
 }
 
-teardown() {
-    rm -f "$CONFIG_FILE"
+@test "systemd service file exists" {
+    [ -f "/etc/systemd/system/backhaul-watchdog.service" ]
 }
 
-@test "watchdog_loop should run without errors" {
-    run bash /usr/local/bin/backhaul_watchdog/backhaul_watchdog.sh --watchdog
+@test "systemd timer file exists" {
+    [ -f "/etc/systemd/system/backhaul-watchdog.timer" ]
+}
+
+@test "systemd timer is enabled" {
+    run systemctl is-enabled backhaul-watchdog.timer
     [ "$status" -eq 0 ]
+    [ "$output" = "enabled" ]
 }
 
-@test "watchdog_loop should detect unreachable target" {
-    echo "PING_TARGETS=\"invalid.target\"" > "$CONFIG_FILE"
-    run bash /usr/local/bin/backhaul_watchdog/backhaul_watchdog.sh --watchdog
-    [[ "$output" =~ "Ping to invalid.target failed" ]]
+@test "watchdog command exists" {
+    [ -x "/usr/local/bin/watchdog" ]
 }

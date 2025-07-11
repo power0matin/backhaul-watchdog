@@ -16,7 +16,13 @@ STATE_FILE="$STATE_DIR/last_action"
 SCRIPT_DIR="/usr/local/bin/backhaul_watchdog"
 
 # Load helpers
-source "$SCRIPT_DIR/helpers.sh"
+if [[ -f "$SCRIPT_DIR/helpers.sh" ]]; then
+    source "$SCRIPT_DIR/helpers.sh"
+else
+    echo -e "${RED}❌ Helper script not found at $SCRIPT_DIR/helpers.sh${NC}"
+    logger -t backhaul-watchdog "Helper script not found"
+    exit 1
+fi
 
 # Check root privileges
 check_root
@@ -36,7 +42,8 @@ show_menu() {
     echo -e "│ Update watchdog script and service                        [4] │"
     echo -e "│ Remove service and config file                            [5] │"
     echo -e "│ Help (Full usage guide)                                   [6] │"
-    echo -e "│ Exit menu                                                 [0] │"
+    echo -e "│ Show logs                                                [7] │"
+    echo -e "│ Exit menu                                                [0] │"
     echo -e ""
     echo -e "${CYAN}╚════════════════════════════════════════════════════════════════════════╝${NC}"
 }
@@ -45,6 +52,7 @@ add_ping_target() {
     read -rp "$(echo -e ${CYAN}"Enter new ping target (IP or domain): "${NC})" NEW_TARGET
     if ! validate_ip_or_domain "$NEW_TARGET"; then
         echo -e "${RED}❌ Invalid IP or domain format${NC}"
+        logger -t backhaul-watchdog "Invalid ping target: $NEW_TARGET"
         return 1
     fi
     PING_TARGETS="$PING_TARGETS $NEW_TARGET"
@@ -58,6 +66,7 @@ remove_ping_target() {
     read -rp "$(echo -e ${CYAN}"Enter target to remove: "${NC})" TARGET
     if [[ ! " $PING_TARGETS " =~ " $TARGET " ]]; then
         echo -e "${RED}❌ Target not found${NC}"
+        logger -t backhaul-watchdog "Target not found: $TARGET"
         return 1
     fi
     PING_TARGETS=$(echo "$PING_TARGETS" | sed "s/\b$TARGET\b//g" | tr -s ' ')
@@ -84,12 +93,14 @@ edit_config() {
 
     if ! validate_numeric "$NEW_LATENCY" || ! validate_numeric "$NEW_INTERVAL" || ! validate_numeric "$NEW_COOLDOWN"; then
         echo -e "${RED}❌ MAX_LATENCY, CHECK_INTERVAL, and COOLDOWN must be numeric${NC}"
+        logger -t backhaul-watchdog "Invalid numeric input for configuration"
         return 1
     fi
 
     for TARGET in $NEW_PING_TARGETS; do
         if ! validate_ip_or_domain "$TARGET"; then
             echo -e "${RED}❌ Invalid IP or domain: $TARGET${NC}"
+            logger -t backhaul-watchdog "Invalid IP or domain: $TARGET"
             return 1
         fi
     done
@@ -105,7 +116,11 @@ edit_config() {
     # Update timer with new CHECK_INTERVAL
     sed -i "s/OnUnitActiveSec=.*/OnUnitActiveSec=${NEW_INTERVAL}s/" /etc/systemd/system/backhaul-watchdog.timer
     systemctl daemon-reload
-    systemctl restart backhaul-watchdog.timer
+    systemctl restart backhaul-watchdog.timer || {
+        echo -e "${RED}❌ Failed to restart backhaul-watchdog.timer${NC}"
+        logger -t backhaul-watchdog "Failed to restart backhaul-watchdog.timer"
+        return 1
+    }
 
     echo -e "${GREEN}✅ Configuration updated${NC}"
     logger -t backhaul-watchdog "Configuration updated: MAX_LATENCY=$NEW_LATENCY, CHECK_INTERVAL=$NEW_INTERVAL, SERVICE_NAME=$NEW_SERVICE, COOLDOWN=$NEW_COOLDOWN"
@@ -134,8 +149,22 @@ show_help() {
     echo -e "4. Update from GitHub: Update the watchdog to the latest version."
     echo -e "5. Remove service: Uninstall all files and services."
     echo -e "6. Help: Display this help message."
+    echo -e "7. Show logs: Display recent watchdog logs."
     echo -e "0. Exit: Close the menu."
     echo -e "${CYAN}=============================${NC}"
+}
+
+show_logs() {
+    echo -e "${CYAN}📜 Displaying Backhaul Watchdog logs...${NC}"
+    if [[ -f /var/log/syslog ]]; then
+        grep "backhaul-watchdog" /var/log/syslog | tail -n 50
+    elif [[ -f /var/log/messages ]]; then
+        grep "backhaul-watchdog" /var/log/messages | tail -n 50
+    else
+        echo -e "${RED}❌ No log file found (/var/log/syslog or /var/log/messages)${NC}"
+        logger -t backhaul-watchdog "No log file found for display"
+        return 1
+    fi
 }
 
 # Telegram notification
@@ -147,6 +176,7 @@ send_telegram_notification() {
             -d text="$message" >/dev/null || {
             echo -e "${RED}❌ Failed to send Telegram notification${NC}"
             logger -t backhaul-watchdog "Failed to send Telegram notification"
+            return 1
         }
     fi
 }
@@ -195,14 +225,15 @@ if [[ "${1:-}" == "--watchdog" ]]; then
 else
     while true; do
         show_menu
-        read -rp "$(echo -e ${YELLOW}Select an option [0-6]: ${NC})" choice
+        read -rp "$(echo -e ${YELLOW}Select an option [0-7]: ${NC})" choice
         case "$choice" in
             1) add_ping_target ;;
             2) edit_config ;;
             3) restart_service ;;
-            4) echo -e "${YELLOW}🔄 Update script functionality not implemented yet.${NC}" ;;
-            5) echo -e "${YELLOW}⚠️  Uninstall functionality not implemented yet.${NC}" ;;
+            4) bash "$SCRIPT_DIR/update.sh" ;;
+            5) bash "$SCRIPT_DIR/uninstall.sh" ;;
             6) show_help ;;
+            7) show_logs ;;
             0) echo -e "${CYAN}👋 Exiting...${NC}"; exit 0 ;;
             *) echo -e "${RED}❌ Invalid option${NC}" ;;
         esac

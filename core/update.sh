@@ -27,6 +27,7 @@ TEMP_DIR="/tmp/backhaul-watchdog-update"
 # Download latest version
 echo -e "${GREEN}📥 Downloading latest version...${NC}"
 rm -rf "$TEMP_DIR"
+mkdir -p "$TEMP_DIR"
 git clone "$REPO_URL" "$TEMP_DIR" || {
     echo -e "${RED}❌ Failed to clone repository from $REPO_URL${NC}"
     logger -t backhaul-watchdog "Failed to clone repository from $REPO_URL"
@@ -47,33 +48,25 @@ cp -f "$TEMP_DIR/core/"*.sh "$SCRIPT_DIR/" || {
     logger -t backhaul-watchdog "Failed to copy core scripts"
     exit 1
 }
-cp -f "$TEMP_DIR/install.sh" /usr/local/bin/ || {
-    echo -e "${RED}❌ Failed to copy install script${NC}"
-    logger -t backhaul-watchdog "Failed to copy install script"
-    exit 1
-}
-cp -f "$TEMP_DIR/systemd/backhaul_watchdog.service" /etc/systemd/system/ || {
+cp -f "$TEMP_DIR/systemd/backhaul-watchdog.service" /etc/systemd/system/ || {
     echo -e "${RED}❌ Failed to copy service file${NC}"
     logger -t backhaul-watchdog "Failed to copy service file"
     exit 1
 }
-cp -f "$TEMP_DIR/systemd/backhaul_watchdog.timer" /etc/systemd/system/ || {
+cp -f "$TEMP_DIR/systemd/backhaul-watchdog.timer" /etc/systemd/system/ || {
     echo -e "${RED}❌ Failed to copy timer file${NC}"
     logger -t backhaul-watchdog "Failed to copy timer file"
     exit 1
 }
-cp -f "$TEMP_DIR/config/config_example.conf" "$CONFIG_DIR/" || {
-    echo -e "${RED}❌ Failed to copy config file${NC}"
-    logger -t backhaul-watchdog "Failed to copy config file"
-    exit 1
-}
-cp -f "$TEMP_DIR/config/setup_endpoints.sh" "$SCRIPT_DIR/" || {
-    echo -e "${RED}❌ Failed to copy setup script${NC}"
-    logger -t backhaul-watchdog "Failed to copy setup script"
-    exit 1
-}
-chmod +x "$SCRIPT_DIR/"*.sh /usr/local/bin/install.sh
-chmod 600 "$CONFIG_DIR/config_example.conf"
+if [[ ! -f "$CONFIG_DIR/backhaul_watchdog.conf" ]]; then
+    cp -f "$TEMP_DIR/config/config_example.conf" "$CONFIG_DIR/backhaul_watchdog.conf" || {
+        echo -e "${RED}❌ Failed to copy config file${NC}"
+        logger -t backhaul-watchdog "Failed to copy config file"
+        exit 1
+    }
+fi
+chmod +x "$SCRIPT_DIR/"*.sh
+chmod 600 "$CONFIG_DIR/backhaul_watchdog.conf"
 
 # Reload systemd
 echo -e "${GREEN}🔄 Reloading systemd...${NC}"

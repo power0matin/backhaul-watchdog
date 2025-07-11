@@ -29,7 +29,7 @@ rm -f /etc/systemd/system/backhaul-watchdog.service /etc/systemd/system/backhaul
 
 # Remove watchdog files
 echo -e "${GREEN}🗑️ Removing watchdog files...${NC}"
-rm -rf /usr/local/bin/backhaul_watchdog /etc/backhaul_watchdog /var/lib/backhaul_watchdog /usr/local/bin/install.sh
+rm -rf /usr/local/bin/backhaul_watchdog /etc/backhaul_watchdog /var/lib/backhaul_watchdog /usr/local/bin/watchdog
 
 # Remove alias
 echo -e "${GREEN}🗑️ Removing CLI alias...${NC}"
