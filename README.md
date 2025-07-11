@@ -72,12 +72,22 @@ RestartSec=10
 WantedBy=multi-user.target
 ```
 
-Use standard `systemctl` commands to manage it:
+Use standard `systemctl` commands to stop it:
 
 ```bash
 sudo systemctl restart backhaul-watchdog
 sudo systemctl stop backhaul-watchdog
 sudo systemctl status backhaul-watchdog
+```
+
+Use standard `systemctl` commands to start it:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable backhaul-watchdog.service
+sudo systemctl start backhaul-watchdog.service
+sudo systemctl enable backhaul-watchdog.timer
+sudo systemctl start backhaul-watchdog.timer
 ```
 
 
