@@ -75,9 +75,9 @@ WantedBy=multi-user.target
 Use standard `systemctl` commands to manage it:
 
 ```bash
-sudo systemctl restart backhaul
-sudo systemctl stop backhaul
-sudo systemctl status backhaul
+sudo systemctl restart backhaul-watchdog
+sudo systemctl stop backhaul-watchdog
+sudo systemctl status backhaul-watchdog
 ```
 
 
@@ -127,7 +127,8 @@ echo "✅ Backhaul Watchdog has been fully uninstalled."
 Or, if you've added an `uninstall.sh` script:
 
 ```bash
-sudo bash uninstall.sh
+sudo bash /usr/local/bin/backhaul_watchdog/uninstall.sh
+rm -rf /usr/local/bin/backhaul_watchdog /etc/backhaul_watchdog /etc/systemd/system/backhaul-watchdog.*
 ```
 
 
