@@ -84,10 +84,10 @@ Use standard `systemctl` commands to start it:
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable backhaul_watchdog.service
-sudo systemctl start backhaul_watchdog.service
-sudo systemctl enable backhaul_watchdog.timer
-sudo systemctl start backhaul_watchdog.timer
+sudo systemctl enable backhaul-watchdog.service
+sudo systemctl start backhaul-watchdog.service
+sudo systemctl enable backhaul-watchdog.timer
+sudo systemctl start backhaul-watchdog.timer
 ```
 
 
