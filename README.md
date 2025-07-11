@@ -27,7 +27,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/power0matin/backhaul-watchdog/
 After installation, launch the CLI menu using:
 
 ```bash
-backhaul
+watchdog
 ```
 
 And configure everything interactively.
