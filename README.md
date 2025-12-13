@@ -146,6 +146,14 @@ rm -rf /usr/local/bin/backhaul_watchdog /etc/backhaul_watchdog /etc/systemd/syst
 
 > ⚠️ **Note**: Double-check paths if you changed them during installation.
 
+## 📬 Contact
+
+**Matin Shahabadi (متین شاه‌آبادی / متین شاه آبادی)**
+
+* Website: [matinshahabadi.ir](https://matinshahabadi.ir)
+* Email: [me@matinshahabadi.ir](mailto:me@matinshahabadi.ir)
+* GitHub: [power0matin](https://github.com/power0matin)
+* LinkedIn: [matin-shahabadi](https://www.linkedin.com/in/matin-shahabadi)
 
 ✨ Thanks for using **Backhaul Watchdog** 🙌
 If you find it useful, don’t forget to **⭐ star the repo** and share it with fellow sysadmins.
