@@ -1,5 +1,15 @@
 # 🔒 Backhaul Watchdog
 
+<!-- repo-badges:start -->
+<p align="center">
+  <a href="https://hits.sh/github.com/power0matin/backhaul-watchdog/"><img src="https://hits.sh/github.com/power0matin/backhaul-watchdog.svg?style=flat-square&amp;label=Views&amp;labelColor=18181B&amp;color=0EA5E9&amp;logo=github" alt="Repository Views"/></a>
+  <a href="https://github.com/power0matin/backhaul-watchdog/stargazers"><img src="https://img.shields.io/github/stars/power0matin/backhaul-watchdog?style=flat-square&amp;label=Stars&amp;labelColor=18181B&amp;color=F59E0B&amp;logo=github&amp;logoColor=white" alt="GitHub Stars"/></a>
+  <a href="https://github.com/power0matin/backhaul-watchdog/forks"><img src="https://img.shields.io/github/forks/power0matin/backhaul-watchdog?style=flat-square&amp;label=Forks&amp;labelColor=18181B&amp;color=6366F1&amp;logo=github&amp;logoColor=white" alt="GitHub Forks"/></a>
+  <a href="https://github.com/power0matin/backhaul-watchdog/issues"><img src="https://img.shields.io/github/issues/power0matin/backhaul-watchdog?style=flat-square&amp;label=Issues&amp;labelColor=18181B&amp;color=22C55E&amp;logo=github&amp;logoColor=white" alt="GitHub Issues"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/power0matin/backhaul-watchdog?style=flat-square&amp;label=License&amp;labelColor=18181B&amp;color=EF4444&amp;logo=github&amp;logoColor=white" alt="GitHub License"/></a>
+</p>
+<!-- repo-badges:end -->
+
 A minimal, **production-ready** watchdog script to monitor `IP:PORT` endpoints and **auto-restart** your `backhaul` service on failures.
 Built for system administrators who need **simple**, **reliable** uptime automation.
 
@@ -157,5 +167,3 @@ rm -rf /usr/local/bin/backhaul_watchdog /etc/backhaul_watchdog /etc/systemd/syst
 
 ✨ Thanks for using **Backhaul Watchdog** 🙌
 If you find it useful, don’t forget to **⭐ star the repo** and share it with fellow sysadmins.
-
-
